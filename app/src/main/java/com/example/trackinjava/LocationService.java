@@ -42,6 +42,18 @@ public class LocationService extends Service {
                 if (location != null) {
                     String locText = "Lat: " + location.getLatitude() + ", Lon: " + location.getLongitude();
                     Log.d("LOCATION", locText);
+
+                    new Thread(() -> {
+                        AppDatabase db = AppDatabase.getInstance(getApplicationContext());
+                        db.locationDao().insert(
+                                new LocationEntity(location.getLatitude(), location.getLongitude(), System.currentTimeMillis())
+                        );
+                    }).start();
+
+                    Intent intent = new Intent("com.example.mygpsapp.LOCATION_UPDATE");
+                    intent.putExtra("lat", location.getLatitude());
+                    intent.putExtra("lon", location.getLongitude());
+                    sendBroadcast(intent);
                 }
             }
         };
