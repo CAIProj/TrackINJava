@@ -4,6 +4,9 @@
 
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
 
     <application
         android:allowBackup="true"
@@ -15,6 +18,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TrackInJava"
         tools:targetApi="31">
+        <service android:name=".LocationService" android:foregroundServiceType="location" android:exported="false"/>
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
