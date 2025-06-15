@@ -20,7 +20,9 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -59,29 +61,23 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         locationText = findViewById(R.id.textView3);
-        Button button = (Button) findViewById(R.id.button);
-        Button button2 = (Button) findViewById(R.id.button2);
+        Button button = findViewById(R.id.button);
+        Button button2 = findViewById(R.id.button2);
 
         checkPermission();
 
-        button.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
+        button.setOnClickListener(v -> {
 
-                if (isTrackingLocation) {
-                    stopTracking();
-                    isTrackingLocation = false;
-                } else {
-                    startTracking();
-                    isTrackingLocation = true;
-                }
+            if (isTrackingLocation) {
+                stopTracking();
+                isTrackingLocation = false;
+            } else {
+                startTracking();
+                isTrackingLocation = true;
             }
         });
 
-        button2.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                loadSavedLocations();
-            }
-        });
+        button2.setOnClickListener(v -> loadSavedLocations());
     }
 
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
@@ -120,24 +116,35 @@ public class MainActivity extends AppCompatActivity {
         new Thread(() -> {
             AppDatabase db = AppDatabase.getInstance(getApplicationContext());
             List<LocationEntity> savedLocations = db.locationDao().getAll();
+            List<TrackSession> savedSessions = db.trackSessionDao().getAll();
 
             locationStrings.clear();
             for (LocationEntity loc : savedLocations) {
                 locationStrings.add(
-                        String.format("Lat: %.5f, Lon: %.5f\n%s",
+                        String.format("Lat: %.5f, Lon: %.5f\n%s, %d",
                                 loc.latitude,
                                 loc.longitude,
-                                new java.text.SimpleDateFormat("HH:mm:ss dd/MM/yyyy")
-                                        .format(new java.util.Date(loc.timestamp))
+                                new SimpleDateFormat("HH:mm:ss dd/MM/yyyy")
+                                        .format(new Date(loc.timestamp)),
+                                loc.sessionId
                         )
                 );
             }
+
+            for (TrackSession loc : savedSessions) {
+                String entity = String.format("Session id: " + loc.sessionId +
+                        " Session start time: " + loc.startTime +
+                        " Session end time: " + loc.endTime
+                );
+
+                Log.d("DATABASE", entity);
+            }
+
 
             Log.d("DATABASE", String.valueOf(savedLocations.size()));
             Log.d("DATABASE", String.valueOf(locationStrings));
 
             // Update UI on main thread
-//            new Handler(Looper.getMainLooper()).post(() -> locationAdapter.notifyDataSetChanged());
         }).start();
     }
 }
