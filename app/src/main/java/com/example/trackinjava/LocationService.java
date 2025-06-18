@@ -22,13 +22,18 @@ public class LocationService extends Service {
 
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
-    public static boolean isRunning = false;
+    private long currentSessionId = -1;
 
     @Override
     public void onCreate() {
         super.onCreate();
         startForegroundService();
-        isRunning = true;
+
+        AppDatabase db = AppDatabase.getInstance(this);
+        TrackSession session = new TrackSession();
+        session.startTime = System.currentTimeMillis();
+
+        new Thread(() -> currentSessionId = db.trackSessionDao().insert(session)).start();
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
@@ -42,24 +47,19 @@ public class LocationService extends Service {
             public void onLocationResult(@NonNull LocationResult locationResult) {
                 Location location = locationResult.getLastLocation();
                 if (location != null) {
-                    double lat = location.getLatitude();
-                    double lon = location.getLongitude();
-                    double alt = location.getAltitude();
-
-                    String locText = "Lat: " + lat + ", Lon: " + lon + ", Alt: " + alt + " m";
+                    String locText = "Lat: " + location.getLatitude() + ", Lon: " + location.getLongitude();
                     Log.d("LOCATION", locText);
 
-                    new Thread(() -> {
-                        AppDatabase db = AppDatabase.getInstance(getApplicationContext());
-                        db.locationDao().insert(
-                                new LocationEntity(lat, lon, alt, System.currentTimeMillis())
-                        );
-                    }).start();
+                    double latitude = location.getLatitude();
+                    double longitude = location.getLongitude();
 
-                    Intent intent = new Intent("com.example.trackinjava.LOCATION_UPDATE");
-                    intent.putExtra("lat", location.getLatitude());
-                    intent.putExtra("lon", location.getLongitude());
-                    intent.putExtra("alt", location.getAltitude());
+                    new Thread(() -> db.locationDao().insert(
+                            new LocationEntity(currentSessionId, latitude, longitude, System.currentTimeMillis())
+                    )).start();
+
+                    Intent intent = new Intent("com.example.mygpsapp.LOCATION_UPDATE");
+                    intent.putExtra("lat", latitude);
+                    intent.putExtra("lon", longitude);
                     sendBroadcast(intent);
                 }
             }
@@ -99,10 +99,11 @@ public class LocationService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        isRunning = false;
         if (fusedLocationClient != null && locationCallback != null) {
             fusedLocationClient.removeLocationUpdates(locationCallback);
         }
+        AppDatabase db = AppDatabase.getInstance(this);
+        new Thread(() -> db.trackSessionDao().endSession(currentSessionId, System.currentTimeMillis())).start();
     }
 
     @Nullable

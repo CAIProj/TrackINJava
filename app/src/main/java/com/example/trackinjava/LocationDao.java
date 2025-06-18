@@ -12,4 +12,8 @@ public interface LocationDao {
 
     @Query("SELECT * FROM LocationEntity ORDER BY timestamp DESC")
     List<LocationEntity> getAll();
+
+    @Query("SELECT * FROM LocationEntity WHERE sessionId = :sessionId ORDER BY timestamp ASC")
+    List<LocationEntity> getBySession(long sessionId);
 }
+

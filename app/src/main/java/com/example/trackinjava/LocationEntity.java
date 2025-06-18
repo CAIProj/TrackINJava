@@ -8,15 +8,16 @@ public class LocationEntity {
     @PrimaryKey(autoGenerate = true)
     public int id;
 
+    public long sessionId;
     public double latitude;
     public double longitude;
-    public double altitude;
     public long timestamp;
 
-    public LocationEntity(double latitude, double longitude, double altitude, long timestamp) {
+    public LocationEntity(long sessionId, double latitude, double longitude, long timestamp) {
+        this.sessionId = sessionId;
         this.latitude = latitude;
         this.longitude = longitude;
-        this.altitude = altitude;
         this.timestamp = timestamp;
     }
 }
+
