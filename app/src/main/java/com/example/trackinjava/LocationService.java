@@ -22,11 +22,13 @@ public class LocationService extends Service {
 
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
+    public static boolean isRunning = false;
 
     @Override
     public void onCreate() {
         super.onCreate();
         startForegroundService();
+        isRunning = true;
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
@@ -40,19 +42,24 @@ public class LocationService extends Service {
             public void onLocationResult(@NonNull LocationResult locationResult) {
                 Location location = locationResult.getLastLocation();
                 if (location != null) {
-                    String locText = "Lat: " + location.getLatitude() + ", Lon: " + location.getLongitude();
+                    double lat = location.getLatitude();
+                    double lon = location.getLongitude();
+                    double alt = location.getAltitude();
+
+                    String locText = "Lat: " + lat + ", Lon: " + lon + ", Alt: " + alt + " m";
                     Log.d("LOCATION", locText);
 
                     new Thread(() -> {
                         AppDatabase db = AppDatabase.getInstance(getApplicationContext());
                         db.locationDao().insert(
-                                new LocationEntity(location.getLatitude(), location.getLongitude(), System.currentTimeMillis())
+                                new LocationEntity(lat, lon, alt, System.currentTimeMillis())
                         );
                     }).start();
 
-                    Intent intent = new Intent("com.example.mygpsapp.LOCATION_UPDATE");
+                    Intent intent = new Intent("com.example.trackinjava.LOCATION_UPDATE");
                     intent.putExtra("lat", location.getLatitude());
                     intent.putExtra("lon", location.getLongitude());
+                    intent.putExtra("alt", location.getAltitude());
                     sendBroadcast(intent);
                 }
             }
@@ -92,6 +99,7 @@ public class LocationService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        isRunning = false;
         if (fusedLocationClient != null && locationCallback != null) {
             fusedLocationClient.removeLocationUpdates(locationCallback);
         }
