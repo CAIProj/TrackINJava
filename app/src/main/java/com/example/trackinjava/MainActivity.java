@@ -1,9 +1,14 @@
 package com.example.trackinjava;
 
 import android.os.Bundle;
-import androidx.annotation.NonNull;
 import android.widget.Button;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+
+import com.example.trackinjava.TrackFragment;
+import com.example.trackinjava.DashboardFragment;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -14,11 +19,31 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        if (savedInstanceState == null) {
+        BottomNavigationView bottomNavigation = findViewById(R.id.bottom_navigation);
+
+        // Handle bottom nav item selection
+        bottomNavigation.setOnItemSelectedListener(item -> {
+            Fragment selectedFragment;
+
+            if (item.getItemId() == R.id.nav_track) {
+                selectedFragment = new TrackFragment();
+            } else if (item.getItemId() == R.id.nav_dashboard) {
+                selectedFragment = new DashboardFragment();
+            } else {
+                return false;
+            }
+
             getSupportFragmentManager()
                     .beginTransaction()
-                    .replace(R.id.fragment_container, new TrackFragment())
+                    .replace(R.id.fragment_container, selectedFragment)
                     .commit();
+
+            return true;
+        });
+
+        // Select default fragment only on first creation
+        if (savedInstanceState == null) {
+            bottomNavigation.setSelectedItemId(R.id.nav_track); // Triggers the listener
         }
     }
 
