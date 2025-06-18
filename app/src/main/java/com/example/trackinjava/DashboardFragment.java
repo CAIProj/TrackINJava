@@ -44,20 +44,17 @@ public class DashboardFragment extends Fragment {
             List<TrackSession> savedSessions = db.trackSessionDao().getAll();
 
             // Update UI on main thread
-            new Handler(Looper.getMainLooper()).post(new Runnable() {
-                @Override
-                public void run() {
-                    locationStrings.clear();
+            new Handler(Looper.getMainLooper()).post(() -> {
+                locationStrings.clear();
 
-                    for (TrackSession loc : savedSessions) {
-                        String entity = String.format("Session id: " + loc.sessionId +
-                                " \nStart : " + convertDate(loc.startTime)
-                        );
+                for (TrackSession loc : savedSessions) {
+                    String entity = String.format("Session id: " + loc.sessionId +
+                            " \nStart : " + convertDate(loc.startTime)
+                    );
 
-                        locationStrings.add(entity);
-                    }
-                    locationAdapter.notifyDataSetChanged();
+                    locationStrings.add(entity);
                 }
+                locationAdapter.notifyDataSetChanged();
             });
         }).start();
     }
