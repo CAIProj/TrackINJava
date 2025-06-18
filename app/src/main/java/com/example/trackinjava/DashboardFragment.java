@@ -38,26 +38,27 @@ public class DashboardFragment extends Fragment {
         return view;
     }
 
-
     private void loadSavedLocations() {
         new Thread(() -> {
             AppDatabase db = AppDatabase.getInstance(getActivity().getApplicationContext());
             List<TrackSession> savedSessions = db.trackSessionDao().getAll();
 
-            locationStrings.clear();
-
-            for (TrackSession loc : savedSessions) {
-                String entity = String.format("Session id: " + loc.sessionId +
-                        " \nStart : " + convertDate(loc.startTime)
-                );
-
-                locationStrings.add(entity);
-            }
-
-            Log.d("DATABASE", String.valueOf(locationStrings));
-
             // Update UI on main thread
-            new Handler(Looper.getMainLooper()).post(() -> locationAdapter.notifyDataSetChanged());
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    locationStrings.clear();
+
+                    for (TrackSession loc : savedSessions) {
+                        String entity = String.format("Session id: " + loc.sessionId +
+                                " \nStart : " + convertDate(loc.startTime)
+                        );
+
+                        locationStrings.add(entity);
+                    }
+                    locationAdapter.notifyDataSetChanged();
+                }
+            });
         }).start();
     }
 
