@@ -8,9 +8,13 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -29,6 +33,8 @@ public class MainActivity extends AppCompatActivity {
 
     private TextView locationText;
     private boolean isTrackingLocation = false;
+    private ListView locationListView;
+    private ArrayAdapter<String> locationAdapter;
     private List<String> locationStrings = new ArrayList<>();
 
     private final BroadcastReceiver locationReceiver = new BroadcastReceiver() {
@@ -63,6 +69,11 @@ public class MainActivity extends AppCompatActivity {
         locationText = findViewById(R.id.textView3);
         Button button = findViewById(R.id.button);
         Button button2 = findViewById(R.id.button2);
+
+        // ListView for points tracked
+        locationListView = findViewById(R.id.locationListView);
+        locationAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, locationStrings);
+        locationListView.setAdapter(locationAdapter);
 
         checkPermission();
 
@@ -145,6 +156,7 @@ public class MainActivity extends AppCompatActivity {
             Log.d("DATABASE", String.valueOf(locationStrings));
 
             // Update UI on main thread
+            new Handler(Looper.getMainLooper()).post(() -> locationAdapter.notifyDataSetChanged());
         }).start();
     }
 }
