@@ -4,36 +4,38 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.format.DateFormat;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
 import androidx.fragment.app.Fragment;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class DashboardFragment extends Fragment {
     private ListView sessionsListView;
-    private ArrayAdapter<String> locationAdapter;
-    private List<String> locationStrings = new ArrayList<>();
+    private ArrayAdapter<TrackSession> trackAdapter;
+    private List<TrackSession> tracks = new ArrayList<>();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
 
         sessionsListView = view.findViewById(R.id.sessionsListView);
-        locationAdapter = new ArrayAdapter<>(view.getContext(), android.R.layout.simple_list_item_1, locationStrings);
-        sessionsListView.setAdapter(locationAdapter);
+        trackAdapter = new ArrayAdapter<>(view.getContext(), android.R.layout.simple_list_item_1, tracks);
+        sessionsListView.setAdapter(trackAdapter);
 
         loadSavedLocations();
+
+        sessionsListView.setOnItemClickListener((adapter, view1, position, arg) -> {
+            Intent trackDetails = new Intent(getActivity().getApplicationContext(), TrackDetails.class);
+            TrackSession trackSession = (TrackSession) adapter.getItemAtPosition(position);
+            trackDetails.putExtra("trackDetailsScreenSessionId", trackSession.sessionId);
+            startActivity(trackDetails);
+        });
 
         return view;
     }
@@ -45,21 +47,11 @@ public class DashboardFragment extends Fragment {
 
             // Update UI on main thread
             new Handler(Looper.getMainLooper()).post(() -> {
-                locationStrings.clear();
+                tracks.clear();
 
-                for (TrackSession loc : savedSessions) {
-                    String entity = String.format("Session id: " + loc.sessionId +
-                            " \nStart : " + convertDate(loc.startTime)
-                    );
-
-                    locationStrings.add(entity);
-                }
-                locationAdapter.notifyDataSetChanged();
+                        tracks.addAll(savedSessions);
+                trackAdapter.notifyDataSetChanged();
             });
         }).start();
-    }
-
-    private static String convertDate(long dateInMilliseconds) {
-        return DateFormat.format("dd/MM/yyyy hh:mm:ss", dateInMilliseconds).toString();
     }
 }

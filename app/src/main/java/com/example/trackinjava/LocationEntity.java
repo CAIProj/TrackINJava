@@ -1,5 +1,8 @@
 package com.example.trackinjava;
 
+import android.text.format.DateFormat;
+
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
@@ -19,5 +22,19 @@ public class LocationEntity {
         this.latitude = latitude;
         this.longitude = longitude;
         this.timestamp = timestamp;
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+        return String.format("Session id: " + sessionId +
+                "\nAltitude: " + altitude +
+                "\nLatitude: " + latitude +
+                "\nLongitude: " + longitude +
+                "\nTimestamp : " + convertDate(timestamp));
+    }
+
+    private static String convertDate(long dateInMilliseconds) {
+        return DateFormat.format("dd/MM/yyyy hh:mm:ss", dateInMilliseconds).toString();
     }
 }
