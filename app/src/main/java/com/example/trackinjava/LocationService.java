@@ -23,11 +23,13 @@ public class LocationService extends Service {
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
     private long currentSessionId = -1;
+    public static boolean isRunning = false;
 
     @Override
     public void onCreate() {
         super.onCreate();
         startForegroundService();
+        isRunning = true;
 
         AppDatabase db = AppDatabase.getInstance(this);
         TrackSession session = new TrackSession();
@@ -52,12 +54,14 @@ public class LocationService extends Service {
 
                     double latitude = location.getLatitude();
                     double longitude = location.getLongitude();
+                    double altitude = location.getAltitude();
 
                     new Thread(() -> db.locationDao().insert(
-                            new LocationEntity(currentSessionId, latitude, longitude, System.currentTimeMillis())
+                            new LocationEntity(currentSessionId, altitude, latitude, longitude, System.currentTimeMillis())
                     )).start();
 
-                    Intent intent = new Intent("com.example.mygpsapp.LOCATION_UPDATE");
+                    Intent intent = new Intent("com.example.trackinjava.LOCATION_UPDATE");
+                    intent.putExtra("alt", altitude);
                     intent.putExtra("lat", latitude);
                     intent.putExtra("lon", longitude);
                     sendBroadcast(intent);
@@ -99,6 +103,7 @@ public class LocationService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        isRunning = false;
         if (fusedLocationClient != null && locationCallback != null) {
             fusedLocationClient.removeLocationUpdates(locationCallback);
         }
