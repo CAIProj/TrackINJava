@@ -1,6 +1,7 @@
 package com.example.trackinjava;
 
 import android.content.Intent;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -93,6 +94,21 @@ public class TrackDetails extends AppCompatActivity {
 
                 startTime.setText(points.get(0).getDate());
                 endTime.setText(points.get(points.size() - 1).getDate());
+
+                float totalDistance = 0;
+                for (int i = 0; i < points.size()-1; i++) {
+                    Location firstLocation = new Location("gps");
+                    firstLocation.setLatitude(points.get(i).latitude);
+                    firstLocation.setLongitude(points.get(i).longitude);
+
+                    Location secondLocation = new Location("gps");
+                    secondLocation.setLatitude(points.get(i+1).latitude);
+                    secondLocation.setLongitude(points.get(i+1).longitude);
+
+                    totalDistance += firstLocation.distanceTo(secondLocation);
+                }
+
+                distance.setText(String.valueOf((int) totalDistance) + " m");
             });
         }).start();
     }
