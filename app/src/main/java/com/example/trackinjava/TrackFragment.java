@@ -6,8 +6,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,60 +23,57 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 
 public class TrackFragment extends Fragment {
     private Button startStopButton;
-    private Button viewLogsButton;
     private TextView latlonText;
     private TextView altText;
     private TextView distanceText;
+    private TextView timeText;
     private String lastlatlon = null;
     private String lastalt = null;
+    private String lastdist = null;
+    private String lasttime = null;
     private boolean isTrackingLocation = false;
-    private List<String> locationStrings = new ArrayList<>();
     private BroadcastReceiver locationReceiver;
     private ActivityResultLauncher<String> locationPermissionLauncher;
+    private List<Location> trackedLocations = new ArrayList<>();
+    private float totalDistance = 0f;
+    private long trackingStartTime = 0L;
+    private Handler timeHandler = new Handler(Looper.getMainLooper());
+    private Runnable timeRunnable;
 
-    @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_track, container, false);
 
         startStopButton = view.findViewById(R.id.startStopButton);
-        viewLogsButton = view.findViewById(R.id.viewLogsButton);
         latlonText = view.findViewById(R.id.latLonText);
         altText = view.findViewById(R.id.altitudeText);
         distanceText = view.findViewById(R.id.distanceText);
+        timeText = view.findViewById(R.id.timeText);
 
         if (savedInstanceState != null) {
             lastlatlon = savedInstanceState.getString("lastlatlon");
             lastalt = savedInstanceState.getString("lastalt");
+            lastdist = savedInstanceState.getString("lastdist");
+            lasttime = savedInstanceState.getString("lasttime");
             isTrackingLocation = savedInstanceState.getBoolean("tracking", false);
-        }
 
-        if (lastalt != null && lastlatlon != null ) {
             latlonText.setText(lastlatlon);
             altText.setText(lastalt);
+            distanceText.setText(lastdist);
+            timeText.setText(lasttime);
         }
 
-        if (LocationService.isRunning) {
-            isTrackingLocation = true;
-            startStopButton.setText("STOP");
-        } else {
-            isTrackingLocation = false;
-            startStopButton.setText("START");
-        }
-
+        startStopButton.setText(isTrackingLocation ? "STOP" : "START");
         setupLocationPermissionLauncher();
         checkPermission();
         setupReceiver();
@@ -89,8 +89,6 @@ public class TrackFragment extends Fragment {
                 startStopButton.setText("STOP");
             }
         });
-
-        viewLogsButton.setOnClickListener(v -> loadSavedLocations());
         return view;
     }
 
@@ -106,17 +104,31 @@ public class TrackFragment extends Fragment {
                     String locText = String.format("Lat: %.5f, Lon: %.5f", lat, lon);
                     String altStr = String.format("Altitude: %.2f m", alt);
 
+                    Location currentLocation = new Location("gps");
+                    currentLocation.setLatitude(lat);
+                    currentLocation.setLongitude(lon);
+
+                    if (!trackedLocations.isEmpty()) {
+                        Location lastLocation = trackedLocations.get(trackedLocations.size() - 1);
+                        float distance = lastLocation.distanceTo(currentLocation);
+                        totalDistance += distance;
+                    }
+                    trackedLocations.add(currentLocation);
+
+                    String distStr = String.format("Distance: %.2f m", totalDistance);
+                    String timeStr = formatDuration(System.currentTimeMillis() - trackingStartTime);
+
                     lastlatlon = locText;
                     lastalt = altStr;
-
-                    latlonText.setText(locText);  // ✅ use correct variable
-                    altText.setText(altStr);
+                    lastdist = distStr;
+                    lasttime = timeStr;
 
                     if (getActivity() != null) {
                         getActivity().runOnUiThread(() -> {
                             latlonText.setText(locText);
                             altText.setText(altStr);
-                            distanceText.setText("Distance: -- m");
+                            distanceText.setText(distStr);
+                            timeText.setText(timeStr);
                         });
                     }
                 }
@@ -145,41 +157,52 @@ public class TrackFragment extends Fragment {
     }
 
     private void startTracking() {
+        totalDistance = 0f;
+        trackedLocations.clear();
+        trackingStartTime = System.currentTimeMillis();
         Intent serviceIntent = new Intent(requireContext(), LocationService.class);
         requireContext().startForegroundService(serviceIntent);
         Log.d("SERVICE LOCATION", "Tracking successfully started");
+        startElapsedTimeUpdates();
     }
 
     private void stopTracking() {
+        long trackingEndTime = System.currentTimeMillis();
+        long durationMillis = trackingEndTime - trackingStartTime;
+        Log.d("SERVICE LOCATION", "Tracking duration: " + (durationMillis / 1000) + " seconds");
         Intent serviceIntent = new Intent(requireContext(), LocationService.class);
         requireContext().stopService(serviceIntent);
         Log.d("SERVICE LOCATION", "Tracking successfully stopped");
+        stopElapsedTimeUpdates();
     }
 
-    private void loadSavedLocations() {
-        new Thread(() -> {
-            AppDatabase db = AppDatabase.getInstance(requireContext());
-            List<LocationEntity> savedLocations = db.locationDao().getAll();
-
-            locationStrings.clear();
-            for (LocationEntity loc : savedLocations) {
-                String formatted = String.format("Lat: %.5f, Lon: %.5f, Alt: %.2f m\n%s",
-                        loc.latitude, loc.longitude, loc.altitude,
-                        new SimpleDateFormat("HH:mm:ss dd/MM/yyyy").format(new Date(loc.timestamp)));
-                locationStrings.add(formatted);
-            }
-
-            Log.d("DATABASE", "Loaded " + savedLocations.size() + " locations");
-
-            if (getActivity() != null) {
-                getActivity().runOnUiThread(() -> {
-                    // Show in toast or dialog (replace with RecyclerView if needed)
-                    Toast.makeText(requireContext(), "Loaded " + locationStrings.size() + " entries", Toast.LENGTH_SHORT).show();
-                });
-            }
-        }).start();
+    private String formatDuration(long durationMillis) {
+        long seconds = (durationMillis / 1000) % 60;
+        long minutes = (durationMillis / (1000 * 60)) % 60;
+        long hours = (durationMillis / (1000 * 60 * 60));
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 
+    private void startElapsedTimeUpdates() {
+        timeRunnable = new Runnable() {
+            @Override
+            public void run() {
+                long elapsedMillis = System.currentTimeMillis() - trackingStartTime;
+                String formatted = formatDuration(elapsedMillis);
+                lasttime = formatted;
+                if (timeText != null) {
+                    timeText.setText(formatted);
+                }
+                timeHandler.postDelayed(this, 1000); // update every second
+            }
+        };
+        timeHandler.post(timeRunnable);
+    }
+    private void stopElapsedTimeUpdates() {
+        if (timeHandler != null && timeRunnable != null) {
+            timeHandler.removeCallbacks(timeRunnable);
+        }
+    }
 
     @Override
     public void onResume() {
@@ -202,5 +225,7 @@ public class TrackFragment extends Fragment {
         outState.putBoolean("tracking", isTrackingLocation);
         outState.putString("lastlatlon", lastlatlon);
         outState.putString("lastalt", lastalt);
+        outState.putString("lastdist", lastdist);
+        outState.putString("lasttime", lasttime);
     }
 }
