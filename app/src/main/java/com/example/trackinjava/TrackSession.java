@@ -22,6 +22,6 @@ public class TrackSession {
     }
 
     private static String convertDate(long dateInMilliseconds) {
-        return DateFormat.format("dd/MM/yyyy hh:mm:ss", dateInMilliseconds).toString();
+        return DateFormat.format("dd/MM/yyyy HH:mm:ss", dateInMilliseconds).toString();
     }
 }

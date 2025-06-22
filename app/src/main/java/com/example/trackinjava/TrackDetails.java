@@ -1,6 +1,7 @@
 package com.example.trackinjava;
 
 import android.content.Intent;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -9,6 +10,7 @@ import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
@@ -28,7 +30,9 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 public class TrackDetails extends AppCompatActivity {
-    private Button shareButton;
+    private TextView startTime;
+    private TextView endTime;
+    private TextView distance;
     private ListView pointsListView;
     private ArrayAdapter<LocationEntity> pointAdapter;
     private List<LocationEntity> points = new ArrayList<LocationEntity>();
@@ -43,7 +47,11 @@ public class TrackDetails extends AppCompatActivity {
             return insets;
         });
 
-        shareButton = findViewById(R.id.shareButton);
+        Button shareButton = findViewById(R.id.shareButton);
+
+        startTime = findViewById(R.id.startTime);
+        endTime = findViewById(R.id.endTime);
+        distance = findViewById(R.id.distance);
 
         Intent intent = getIntent();
         long sessionId = intent.getLongExtra("trackDetailsScreenSessionId", 0);
@@ -57,8 +65,6 @@ public class TrackDetails extends AppCompatActivity {
         shareButton.setOnClickListener(v -> {
             String gpxString = exportToGpx(points);
             File tempGpxFile = createTempGpxFile(gpxString);
-
-            Log.d("FILE", String.valueOf(tempGpxFile.toURI()));
 
             Uri gpxFileUri = FileProvider.getUriForFile(
                     this,
@@ -85,6 +91,24 @@ public class TrackDetails extends AppCompatActivity {
 
                 points.addAll(savedPoints);
                 pointAdapter.notifyDataSetChanged();
+
+                startTime.setText(points.get(0).getDate());
+                endTime.setText(points.get(points.size() - 1).getDate());
+
+                float totalDistance = 0;
+                for (int i = 0; i < points.size()-1; i++) {
+                    Location firstLocation = new Location("gps");
+                    firstLocation.setLatitude(points.get(i).latitude);
+                    firstLocation.setLongitude(points.get(i).longitude);
+
+                    Location secondLocation = new Location("gps");
+                    secondLocation.setLatitude(points.get(i+1).latitude);
+                    secondLocation.setLongitude(points.get(i+1).longitude);
+
+                    totalDistance += firstLocation.distanceTo(secondLocation);
+                }
+
+                distance.setText(String.valueOf((int) totalDistance) + " m");
             });
         }).start();
     }
@@ -123,7 +147,7 @@ public class TrackDetails extends AppCompatActivity {
     }
 
     private String iso8601(long millis) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.GERMANY);
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         return sdf.format(new Date(millis));
     }
