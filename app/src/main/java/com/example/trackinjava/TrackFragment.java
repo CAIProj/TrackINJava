@@ -101,8 +101,8 @@ public class TrackFragment extends Fragment {
                     double lon = intent.getDoubleExtra("lon", 0);
                     double alt = intent.getDoubleExtra("alt", 0);
 
-                    String locText = String.format("Lat: %.5f, Lon: %.5f", lat, lon);
-                    String altStr = String.format("Altitude: %.2f m", alt);
+                    String locText = String.format("Lat: %.5f  Lon: %.5f", lat, lon);
+                    String altStr = String.format("%.2f m", alt);
 
                     Location currentLocation = new Location("gps");
                     currentLocation.setLatitude(lat);
@@ -115,7 +115,7 @@ public class TrackFragment extends Fragment {
                     }
                     trackedLocations.add(currentLocation);
 
-                    String distStr = String.format("Distance: %.2f m", totalDistance);
+                    String distStr = String.format("%.2f m", totalDistance);
                     String timeStr = formatDuration(System.currentTimeMillis() - trackingStartTime);
 
                     lastlatlon = locText;
