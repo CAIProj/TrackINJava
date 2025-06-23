@@ -160,6 +160,19 @@ public class TrackFragment extends Fragment {
         totalDistance = 0f;
         trackedLocations.clear();
         trackingStartTime = System.currentTimeMillis();
+        lastlatlon = "Lat:  Lon:";
+        lastalt = "0.00 m";
+        lastdist = "0.00 m";
+        lasttime = "00:00:00";
+
+        if (getActivity() != null) {
+            getActivity().runOnUiThread(() -> {
+                latlonText.setText(lastlatlon);
+                altText.setText(lastalt);
+                distanceText.setText(lastdist);
+                timeText.setText(lasttime);
+            });
+        }
         Intent serviceIntent = new Intent(requireContext(), LocationService.class);
         requireContext().startForegroundService(serviceIntent);
         Log.d("SERVICE LOCATION", "Tracking successfully started");
