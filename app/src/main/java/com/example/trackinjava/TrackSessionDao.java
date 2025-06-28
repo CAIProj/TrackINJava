@@ -8,11 +8,11 @@ import java.util.List;
 @Dao
 public interface TrackSessionDao {
     @Insert
-    long insert(TrackSession session); // returns new session ID
+    long insert(TrackSessionEntity session); // returns new session ID
 
-    @Query("SELECT * FROM TrackSession ORDER BY startTime DESC")
-    List<TrackSession> getAll();
+    @Query("SELECT * FROM TrackSessionEntity ORDER BY startTime DESC")
+    List<TrackSessionEntity> getAll();
 
-    @Query("UPDATE TrackSession SET endTime = :end WHERE sessionId = :id")
+    @Query("UPDATE TrackSessionEntity SET endTime = :end WHERE sessionId = :id")
     void endSession(long id, long end);
 }

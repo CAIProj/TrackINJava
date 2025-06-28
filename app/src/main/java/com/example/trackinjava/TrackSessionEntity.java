@@ -7,7 +7,7 @@ import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
 @Entity
-public class TrackSession {
+public class TrackSessionEntity {
     @PrimaryKey(autoGenerate = true)
     public long sessionId;
 

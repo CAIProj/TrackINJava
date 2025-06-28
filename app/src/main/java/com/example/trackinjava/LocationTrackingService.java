@@ -18,7 +18,7 @@ import androidx.core.app.NotificationCompat;
 
 import com.google.android.gms.location.*;
 
-public class LocationService extends Service {
+public class LocationTrackingService extends Service {
 
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
@@ -32,7 +32,7 @@ public class LocationService extends Service {
         isRunning = true;
 
         AppDatabase db = AppDatabase.getInstance(this);
-        TrackSession session = new TrackSession();
+        TrackSessionEntity session = new TrackSessionEntity();
         session.startTime = System.currentTimeMillis();
 
         new Thread(() -> currentSessionId = db.trackSessionDao().insert(session)).start();

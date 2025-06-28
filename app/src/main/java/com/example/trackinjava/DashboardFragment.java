@@ -17,8 +17,8 @@ import java.util.List;
 
 public class DashboardFragment extends Fragment {
     private ListView sessionsListView;
-    private ArrayAdapter<TrackSession> trackAdapter;
-    private List<TrackSession> tracks = new ArrayList<>();
+    private ArrayAdapter<TrackSessionEntity> trackAdapter;
+    private List<TrackSessionEntity> tracks = new ArrayList<>();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -31,9 +31,9 @@ public class DashboardFragment extends Fragment {
         loadSavedLocations();
 
         sessionsListView.setOnItemClickListener((adapter, view1, position, arg) -> {
-            Intent trackDetails = new Intent(getActivity().getApplicationContext(), TrackDetails.class);
-            TrackSession trackSession = (TrackSession) adapter.getItemAtPosition(position);
-            trackDetails.putExtra("trackDetailsScreenSessionId", trackSession.sessionId);
+            Intent trackDetails = new Intent(getActivity().getApplicationContext(), TrackDetailsActivity.class);
+            TrackSessionEntity trackSessionEntity = (TrackSessionEntity) adapter.getItemAtPosition(position);
+            trackDetails.putExtra("trackDetailsScreenSessionId", trackSessionEntity.sessionId);
             startActivity(trackDetails);
         });
 
@@ -43,7 +43,7 @@ public class DashboardFragment extends Fragment {
     private void loadSavedLocations() {
         new Thread(() -> {
             AppDatabase db = AppDatabase.getInstance(getActivity().getApplicationContext());
-            List<TrackSession> savedSessions = db.trackSessionDao().getAll();
+            List<TrackSessionEntity> savedSessions = db.trackSessionDao().getAll();
 
             // Update UI on main thread
             new Handler(Looper.getMainLooper()).post(() -> {

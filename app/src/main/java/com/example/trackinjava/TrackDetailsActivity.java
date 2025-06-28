@@ -6,7 +6,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
@@ -29,7 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
-public class TrackDetails extends AppCompatActivity {
+public class TrackDetailsActivity extends AppCompatActivity {
     private TextView startTime;
     private TextView endTime;
     private TextView distance;

@@ -30,11 +30,11 @@
         </provider>
 
         <activity
-            android:name=".TrackDetails"
+            android:name=".TrackDetailsActivity"
             android:exported="false" />
 
         <service
-            android:name=".LocationService"
+            android:name=".LocationTrackingService"
             android:exported="false"
             android:foregroundServiceType="location" />
 

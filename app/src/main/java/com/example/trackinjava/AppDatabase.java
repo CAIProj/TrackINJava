@@ -5,7 +5,7 @@ import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 
-@Database(entities = {LocationEntity.class, TrackSession.class}, version = 1)
+@Database(entities = {LocationEntity.class, TrackSessionEntity.class}, version = 1)
 public abstract class AppDatabase extends RoomDatabase {
     public abstract LocationDao locationDao();
     public abstract TrackSessionDao trackSessionDao();

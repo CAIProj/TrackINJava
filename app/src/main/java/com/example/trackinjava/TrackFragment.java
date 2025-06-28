@@ -25,9 +25,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-
-import java.util.ArrayList;
-import java.util.List;
+import androidx.lifecycle.ViewModelProvider;
 
 
 public class TrackFragment extends Fragment {
@@ -36,18 +34,8 @@ public class TrackFragment extends Fragment {
     private TextView altText;
     private TextView distanceText;
     private TextView timeText;
-    private String lastlatlon = null;
-    private String lastalt = null;
-    private String lastdist = null;
-    private String lasttime = null;
-    private boolean isTrackingLocation = false;
-    private BroadcastReceiver locationReceiver;
     private ActivityResultLauncher<String> locationPermissionLauncher;
-    private List<Location> trackedLocations = new ArrayList<>();
-    private float totalDistance = 0f;
-    private long trackingStartTime = 0L;
-    private Handler timeHandler = new Handler(Looper.getMainLooper());
-    private Runnable timeRunnable;
+    private TrackInfoViewModel viewModel;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -60,81 +48,49 @@ public class TrackFragment extends Fragment {
         distanceText = view.findViewById(R.id.distanceText);
         timeText = view.findViewById(R.id.timeText);
 
-        if (savedInstanceState != null) {
-            lastlatlon = savedInstanceState.getString("lastlatlon");
-            lastalt = savedInstanceState.getString("lastalt");
-            lastdist = savedInstanceState.getString("lastdist");
-            lasttime = savedInstanceState.getString("lasttime");
-            isTrackingLocation = savedInstanceState.getBoolean("tracking", false);
+        viewModel = new ViewModelProvider(requireActivity()).get(TrackInfoViewModel.class);
 
-            latlonText.setText(lastlatlon);
-            altText.setText(lastalt);
-            distanceText.setText(lastdist);
-            timeText.setText(lasttime);
-        }
+        viewModel.getSelectedTime().observe(getViewLifecycleOwner(), time -> {
+            timeText.setText(time);
+        });
+        viewModel.getSelectedTrackInfo().observe(getViewLifecycleOwner(), locationInfo -> {
 
-        startStopButton.setText(isTrackingLocation ? "STOP" : "START");
+            if (locationInfo.latAndLong != null) {
+                latlonText.setText(locationInfo.latAndLong);
+            } else {
+                latlonText.setText("Lat:  Lon:");
+            }
+
+            if (locationInfo.altitude != null) {
+                altText.setText(locationInfo.altitude);
+            } else {
+                altText.setText("0.00 m");
+            }
+
+            if (locationInfo.distance != null) {
+                distanceText.setText(locationInfo.distance);
+            } else {
+                distanceText.setText("0.00 m");
+            }
+        });
+        viewModel.getSelectedTrackBoolean().observe(getViewLifecycleOwner(), isTrackingLocation -> {
+            if (isTrackingLocation) {
+                startStopButton.setText("STOP");
+            } else {
+                startStopButton.setText("START");
+            }
+        });
+
         setupLocationPermissionLauncher();
         checkPermission();
-        setupReceiver();
+        viewModel.setupReceiver();
 
         startStopButton.setOnClickListener(v -> {
-            if (isTrackingLocation) {
-                stopTracking();
-                isTrackingLocation = false;
-                startStopButton.setText("START");
-            } else {
-                startTracking();
-                isTrackingLocation = true;
-                startStopButton.setText("STOP");
-            }
+            viewModel.startStopButtonPressed(requireContext());
         });
         return view;
     }
 
-    private void setupReceiver() {
-        locationReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (intent != null && "com.example.trackinjava.LOCATION_UPDATE".equals(intent.getAction())) {
-                    double lat = intent.getDoubleExtra("lat", 0);
-                    double lon = intent.getDoubleExtra("lon", 0);
-                    double alt = intent.getDoubleExtra("alt", 0);
-
-                    String locText = String.format("Lat: %.5f  Lon: %.5f", lat, lon);
-                    String altStr = String.format("%.2f m", alt);
-
-                    Location currentLocation = new Location("gps");
-                    currentLocation.setLatitude(lat);
-                    currentLocation.setLongitude(lon);
-
-                    if (!trackedLocations.isEmpty()) {
-                        Location lastLocation = trackedLocations.get(trackedLocations.size() - 1);
-                        float distance = lastLocation.distanceTo(currentLocation);
-                        totalDistance += distance;
-                    }
-                    trackedLocations.add(currentLocation);
-
-                    String distStr = String.format("%.2f m", totalDistance);
-                    String timeStr = formatDuration(System.currentTimeMillis() - trackingStartTime);
-
-                    lastlatlon = locText;
-                    lastalt = altStr;
-                    lastdist = distStr;
-                    lasttime = timeStr;
-
-                    if (getActivity() != null) {
-                        getActivity().runOnUiThread(() -> {
-                            latlonText.setText(locText);
-                            altText.setText(altStr);
-                            distanceText.setText(distStr);
-                            timeText.setText(timeStr);
-                        });
-                    }
-                }
-            }
-        };
-    }
 
     private void setupLocationPermissionLauncher() {
         locationPermissionLauncher = registerForActivityResult(
@@ -156,76 +112,16 @@ public class TrackFragment extends Fragment {
         }
     }
 
-    private void startTracking() {
-        totalDistance = 0f;
-        trackedLocations.clear();
-        trackingStartTime = System.currentTimeMillis();
-        Intent serviceIntent = new Intent(requireContext(), LocationService.class);
-        requireContext().startForegroundService(serviceIntent);
-        Log.d("SERVICE LOCATION", "Tracking successfully started");
-        startElapsedTimeUpdates();
-    }
-
-    private void stopTracking() {
-        long trackingEndTime = System.currentTimeMillis();
-        long durationMillis = trackingEndTime - trackingStartTime;
-        Log.d("SERVICE LOCATION", "Tracking duration: " + (durationMillis / 1000) + " seconds");
-        Intent serviceIntent = new Intent(requireContext(), LocationService.class);
-        requireContext().stopService(serviceIntent);
-        Log.d("SERVICE LOCATION", "Tracking successfully stopped");
-        stopElapsedTimeUpdates();
-    }
-
-    private String formatDuration(long durationMillis) {
-        long seconds = (durationMillis / 1000) % 60;
-        long minutes = (durationMillis / (1000 * 60)) % 60;
-        long hours = (durationMillis / (1000 * 60 * 60));
-        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
-    }
-
-    private void startElapsedTimeUpdates() {
-        timeRunnable = new Runnable() {
-            @Override
-            public void run() {
-                long elapsedMillis = System.currentTimeMillis() - trackingStartTime;
-                String formatted = formatDuration(elapsedMillis);
-                lasttime = formatted;
-                if (timeText != null) {
-                    timeText.setText(formatted);
-                }
-                timeHandler.postDelayed(this, 1000); // update every second
-            }
-        };
-        timeHandler.post(timeRunnable);
-    }
-    private void stopElapsedTimeUpdates() {
-        if (timeHandler != null && timeRunnable != null) {
-            timeHandler.removeCallbacks(timeRunnable);
-        }
-    }
 
     @Override
     public void onResume() {
         super.onResume();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requireContext().registerReceiver(locationReceiver, new IntentFilter("com.example.trackinjava.LOCATION_UPDATE"),
-                    Context.RECEIVER_EXPORTED);
-        }
+        viewModel.registerReceiver(requireContext());
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        requireContext().unregisterReceiver(locationReceiver);
-    }
-
-    @Override
-    public void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putBoolean("tracking", isTrackingLocation);
-        outState.putString("lastlatlon", lastlatlon);
-        outState.putString("lastalt", lastalt);
-        outState.putString("lastdist", lastdist);
-        outState.putString("lasttime", lasttime);
+        viewModel.unregisterReceiver(requireContext());
     }
 }
