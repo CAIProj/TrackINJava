@@ -1,17 +1,8 @@
 package com.example.trackinjava;
 
 import android.Manifest;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.location.Location;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,7 +21,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 public class TrackFragment extends Fragment {
     private Button startStopButton;
-    private TextView latlonText;
+    private TextView latLonText;
     private TextView altText;
     private TextView distanceText;
     private TextView timeText;
@@ -43,7 +34,7 @@ public class TrackFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_track, container, false);
 
         startStopButton = view.findViewById(R.id.startStopButton);
-        latlonText = view.findViewById(R.id.latLonText);
+        latLonText = view.findViewById(R.id.latLonText);
         altText = view.findViewById(R.id.altitudeText);
         distanceText = view.findViewById(R.id.distanceText);
         timeText = view.findViewById(R.id.timeText);
@@ -55,21 +46,13 @@ public class TrackFragment extends Fragment {
         });
         viewModel.getSelectedTrackInfo().observe(getViewLifecycleOwner(), locationInfo -> {
 
-            if (locationInfo.latAndLong != null) {
-                latlonText.setText(locationInfo.latAndLong);
-            } else {
-                latlonText.setText("Lat:  Lon:");
-            }
-
-            if (locationInfo.altitude != null) {
+            if (locationInfo != null) {
+                latLonText.setText(locationInfo.latAndLong);
                 altText.setText(locationInfo.altitude);
-            } else {
-                altText.setText("0.00 m");
-            }
-
-            if (locationInfo.distance != null) {
                 distanceText.setText(locationInfo.distance);
             } else {
+                latLonText.setText("Lat:  Lon:");
+                altText.setText("0.00 m");
                 distanceText.setText("0.00 m");
             }
         });
@@ -111,7 +94,6 @@ public class TrackFragment extends Fragment {
             locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
         }
     }
-
 
     @Override
     public void onResume() {

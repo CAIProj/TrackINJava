@@ -1,7 +1,5 @@
 package com.example.trackinjava;
 
-import static androidx.core.util.TimeUtils.formatDuration;
-
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -13,7 +11,6 @@ import android.os.Looper;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MediatorLiveData;
-import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import java.util.ArrayList;
@@ -53,16 +50,6 @@ public class TrackInfoViewModel extends ViewModel {
         return isTrackingLocation;
     }
 
-    public void registerReceiver(Context context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.registerReceiver(locationReceiver, new IntentFilter("com.example.trackinjava.LOCATION_UPDATE"),
-                    Context.RECEIVER_EXPORTED);
-        }
-    }
-
-    public void unregisterReceiver(Context context) {
-        context.unregisterReceiver(locationReceiver);
-    }
     public void setupReceiver() {
         locationReceiver = new BroadcastReceiver() {
             @Override
@@ -95,6 +82,17 @@ public class TrackInfoViewModel extends ViewModel {
         };
     }
 
+    public void registerReceiver(Context context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(locationReceiver, new IntentFilter("com.example.trackinjava.LOCATION_UPDATE"),
+                    Context.RECEIVER_EXPORTED);
+        }
+    }
+
+    public void unregisterReceiver(Context context) {
+        context.unregisterReceiver(locationReceiver);
+    }
+
     public void startStopButtonPressed(Context context) {
 
         if (isTrackingLocation.getValue()) {
@@ -102,17 +100,10 @@ public class TrackInfoViewModel extends ViewModel {
             isTrackingLocation.setValue(false);
         } else {
             startTracking(context);
+            trackInfo.setValue(null);
             isTrackingLocation.setValue(true);
-            trackInfo.setValue(new LocationInfo(null, null, null));
         }
     }
-
-    private void stopTracking(Context context) {
-        Intent serviceIntent = new Intent(context, LocationTrackingService.class);
-        context.stopService(serviceIntent);
-        stopElapsedTimeUpdates();
-    }
-
 
     private void startTracking(Context context) {
         totalDistance = 0f;
@@ -120,6 +111,12 @@ public class TrackInfoViewModel extends ViewModel {
         Intent serviceIntent = new Intent(context, LocationTrackingService.class);
         context.startForegroundService(serviceIntent);
         startElapsedTimeUpdates();
+    }
+
+    private void stopTracking(Context context) {
+        Intent serviceIntent = new Intent(context, LocationTrackingService.class);
+        context.stopService(serviceIntent);
+        stopElapsedTimeUpdates();
     }
 
     public void startElapsedTimeUpdates() {
